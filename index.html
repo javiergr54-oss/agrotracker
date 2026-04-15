@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2D5A1B">
+<title>AgroTracker</title>
+<style>
+:root{
+  --g:#2D5A1B;--gl:#EBF5E0;--gm:#4A8A2A;
+  --b:#1A5CA8;--bl:#E5EFFA;
+  --am:#B45309;--al:#FEF3C7;
+  --rd:#B91C1C;--rl:#FEE2E2;
+  --or:#993C1D;--ol:#FAECE7;
+  --bg:#F5F2EC;--surf:#FFFFFF;--surf2:#EEEBE3;
+  --bdr:rgba(0,0,0,0.1);--bdr2:rgba(0,0,0,0.18);
+  --tx:#1A1A16;--tx2:#5A5A52;--tx3:#8A8A82;
+  --nav-h:calc(62px + env(safe-area-inset-bottom));
+  --top-h:calc(52px + env(safe-area-inset-top));
+  --r:14px;--rs:9px;
+  --sh:0 1px 4px rgba(0,0,0,0.08);
+  --sha:0 2px 12px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;color:var(--tx);-webkit-font-smoothing:antialiased}
+#app{position:fixed;top:0;left:0;right:0;bottom:0}
+
+/* SCREENS */
+.screen{position:absolute;top:0;left:0;right:0;bottom:var(--nav-h);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:var(--bg);opacity:0;pointer-events:none;transform:translateX(20px);transition:opacity .22s ease,transform .22s ease;overscroll-behavior:contain}
+.screen.active{opacity:1;pointer-events:all;transform:translateX(0)}
+.screen.slide-in{opacity:0;transform:translateX(100%)}
+.screen-body{padding:0 0 20px}
+
+/* TOP BAR */
+.topbar{position:sticky;top:0;z-index:100;background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 16px;display:flex;align-items:center;gap:10px;height:52px;padding-top:env(safe-area-inset-top)}
+.topbar-title{font-size:17px;font-weight:600;color:var(--tx);flex:1}
+.topbar-right{font-size:13px;color:var(--tx2)}
+.back-btn{width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--tx2);flex-shrink:0}
+.back-btn:active{background:var(--surf2)}
+
+/* BOTTOM NAV */
+#nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--surf);border-top:1px solid var(--bdr);display:flex;align-items:flex-start;padding-top:6px;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;min-height:48px}
+.nav-icon{width:24px;height:24px;color:var(--tx3)}
+.nav-lbl{font-size:10px;color:var(--tx3);font-weight:500}
+.nav-btn.active .nav-icon{color:var(--g)}
+.nav-btn.active .nav-lbl{color:var(--g)}
+.nav-center{width:56px;height:56px;border-radius:28px;background:var(--g);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:-14px;box-shadow:var(--sha);flex-shrink:0}
+.nav-center:active{transform:scale(0.94)}
+
+/* CARDS */
+.card{background:var(--surf);border-radius:var(--r);box-shadow:var(--sh);margin:0 16px 12px;overflow:hidden}
+.card-pad{padding:14px 16px}
+.card-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bdr)}
+.card-row:last-child{border-bottom:none}
+
+/* SECTION TITLE */
+.stitle{font-size:12px;font-weight:600;color:var(--tx3);padding:18px 16px 8px;letter-spacing:.07em;text-transform:uppercase}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px}
+.bg{background:var(--gl);color:var(--g)}
+.bb{background:var(--bl);color:var(--b)}
+.ba{background:var(--al);color:var(--am)}
+.bx{background:var(--surf2);color:var(--tx2)}
+.br{background:var(--ol);color:var(--or)}
+.brd{background:var(--rl);color:var(--rd)}
+
+/* ALERT STRIP */
+.alert-card{margin:0 16px 10px;border-radius:var(--r);background:var(--surf);box-shadow:var(--sh);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;border-left:4px solid var(--bdr2)}
+.alert-card.green{border-left-color:var(--g)}
+.alert-card.blue{border-left-color:var(--b)}
+.alert-card.amber{border-left-color:var(--am)}
+.alert-card.red{border-left-color:var(--rd)}
+.alert-card.orange{border-left-color:var(--or)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px;margin-bottom:4px}
+.metric{background:var(--surf);border-radius:var(--rs);box-shadow:var(--sh);padding:12px 10px;text-align:center}
+.metric-val{font-size:20px;font-weight:700;color:var(--tx);display:block}
+.metric-lbl{font-size:11px;color:var(--tx2);margin-top:1px;display:block}
+
+/* FINCA CARD */
+.finca-card{background:var(--surf);border-radius:var(--r);box-shadow:var(--sh);margin:0 16px 12px;padding:14px 16px;display:flex;align-items:center;gap:13px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.finca-card:active{transform:scale(0.98);box-shadow:none}
+.finca-dot{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff}
+
+/* ACTIVITY ROW */
+.act-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--bdr)}
+.act-row:last-child{border-bottom:none}
+.act-icon{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+
+/* FORMS */
+.form-section{padding:0 16px;margin-bottom:14px}
+.form-label{font-size:13px;font-weight:500;color:var(--tx2);margin-bottom:6px;display:block}
+input,select,textarea{font-family:inherit;font-size:15px;width:100%;border:1.5px solid var(--bdr2);border-radius:var(--rs);padding:11px 13px;background:var(--surf);color:var(--tx);outline:none;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--g);box-shadow:0 0 0 3px rgba(45,90,27,.15)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:14px}
+.form-row .form-label{padding:0;margin-bottom:5px}
+.form-row input,.form-row select{margin-top:0}
+
+/* PILLS */
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px;margin-bottom:16px}
+.pill{padding:8px 14px;border-radius:20px;border:1.5px solid var(--bdr2);background:var(--surf);font-size:13px;font-weight:500;cursor:pointer;color:var(--tx2);font-family:inherit;-webkit-user-select:none;user-select:none}
+.pill:active{transform:scale(.96)}
+.pill.on{background:var(--gl);border-color:var(--g);color:var(--g)}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:15px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.01em}
+.btn-primary:active{background:var(--gm)}
+.btn-primary:disabled{background:var(--tx3);cursor:default}
+.btn-secondary{padding:10px 18px;background:transparent;color:var(--tx2);border:1.5px solid var(--bdr2);border-radius:var(--rs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.btn-secondary:active{background:var(--surf2)}
+.btn-danger{padding:10px 18px;background:transparent;color:var(--rd);border:1.5px solid var(--rl);border-radius:var(--rs);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+
+/* RIEGO */
+.turno-card{background:var(--surf);border-radius:var(--r);box-shadow:var(--sh);margin:0 16px 12px;padding:14px 16px}
+.turno-prog{height:6px;border-radius:3px;background:var(--surf2);margin:10px 0 8px;overflow:hidden}
+.turno-fill{height:100%;border-radius:3px;background:var(--b);transition:width .5s ease}
+
+/* TOGGLE */
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--surf2);cursor:pointer;display:flex;align-items:center;padding:2px;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--g);justify-content:flex-end}
+.toggle-knob{width:22px;height:22px;border-radius:11px;background:white;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:all .2s}
+
+/* SEPARATOR */
+.sep{height:1px;background:var(--bdr);margin:0 16px}
+.sep-full{height:1px;background:var(--bdr)}
+
+/* FENOLOGÍA */
+.feno{display:flex;align-items:center;padding:4px 0 8px}
+.feno-step{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.feno-circle{width:26px;height:26px;border-radius:50%;border:2px solid var(--bdr2);background:var(--surf2)}
+.feno-circle.done{background:var(--g);border-color:var(--g)}
+.feno-circle.current{background:var(--surf);border-color:var(--g);box-shadow:0 0 0 3px var(--gl)}
+.feno-lbl{font-size:10px;color:var(--tx3);text-align:center;line-height:1.2}
+.feno-lbl.done{color:var(--g);font-weight:600}
+.feno-lbl.current{color:var(--g);font-weight:700}
+.feno-line{flex:1;height:2px;background:var(--bdr2);align-self:center;margin-bottom:18px}
+.feno-line.done{background:var(--g)}
+
+/* WEATHER */
+.weather-card{background:var(--b);border-radius:var(--r);margin:0 16px 12px;padding:16px;color:#fff}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%) translateY(20px);background:rgba(26,26,22,.88);color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:999;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:50px 20px;color:var(--tx3)}
+.empty svg{margin-bottom:12px;opacity:.4}
+.empty p{font-size:15px}
+
+/* PARCELA MINI */
+.parc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.parc-row:last-child{border-bottom:none}
+
+/* DYNAMIC FORM FIELDS */
+.act-fields{display:none}
+.act-fields.show{display:block}
+
+/* COLORS FOR FINCA */
+.color-pick{display:flex;gap:10px;flex-wrap:wrap;padding:0 16px;margin-bottom:16px}
+.color-swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .15s}
+.color-swatch.sel{border-color:white;box-shadow:0 0 0 2px var(--tx)}
+.color-swatch:active{transform:scale(.9)}
+
+/* SUMMARY BOX */
+.summary-box{background:var(--surf2);border-radius:var(--rs);padding:11px 13px;margin:0 16px 14px}
+
+/* HEADER gradient for dashboard */
+.dash-header{background:var(--g);color:#fff;padding:20px 16px 20px;padding-top:calc(20px + env(safe-area-inset-top))}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ========== DASHBOARD ========== -->
+<div id="screen-dashboard" class="screen active">
+  <div class="dash-header">
+    <p id="dash-date" style="font-size:13px;opacity:.8;margin-bottom:2px"></p>
+    <h1 id="dash-greeting" style="font-size:24px;font-weight:700;margin-bottom:14px">Buenos días</h1>
+    <div id="weather-widget" style="background:rgba(255,255,255,.15);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <p style="font-size:11px;opacity:.75;margin-bottom:2px">Xinzo de Limia</p>
+        <p id="w-temp" style="font-size:28px;font-weight:700">--°C</p>
+        <p id="w-desc" style="font-size:13px;opacity:.85;margin-top:1px">Cargando...</p>
+      </div>
+      <div style="text-align:right;font-size:13px;opacity:.85">
+        <p id="w-hum">Hum. --%</p>
+        <p id="w-wind" style="margin-top:4px">Viento -- km/h</p>
+        <p id="w-rain" style="margin-top:4px">Lluvia -- mm</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:4px"></div>
+  <!-- SYNC STATUS -->
+  <div style="background:var(--surf);border-radius:var(--rs);margin:12px 16px 0;padding:9px 13px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);box-shadow:var(--sh)">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--g);flex-shrink:0"></div>
+    <span>Datos guardados en este dispositivo</span>
+    <span id="act-count" style="margin-left:auto;color:var(--tx3)"></span>
+  </div>
+
+  <!-- METRICS -->
+  <div class="stitle">Mi explotación</div>
+  <div class="metrics">
+    <div class="metric"><span id="m-fincas" class="metric-val">0</span><span class="metric-lbl">Fincas</span></div>
+    <div class="metric"><span id="m-ha" class="metric-val">0</span><span class="metric-lbl">Hectáreas</span></div>
+    <div class="metric"><span id="m-camp" class="metric-val">0</span><span class="metric-lbl">En curso</span></div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="stitle">Alertas del día</div>
+  <div id="alertas-container"></div>
+
+  <!-- ACTIVIDADES RECIENTES -->
+  <div class="stitle">Actividad reciente</div>
+  <div class="card" id="recientes-container">
+    <div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin actividades registradas</p></div>
+  </div>
+
+</div>
+
+<!-- ========== FINCAS ========== -->
+<div id="screen-fincas" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">Mis fincas</div>
+    <span id="fincas-ha" class="topbar-right"></span>
+  </div>
+  <div class="screen-body">
+    <div style="height:8px"></div>
+    <div id="fincas-list"></div>
+    <div style="padding:4px 16px 8px">
+      <button class="btn-secondary" style="width:100%;border-style:dashed" onclick="showScreen('nueva-finca')">+ Nueva finca</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== FINCA DETAIL ========== -->
+<div id="screen-finca-detail" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15L7 10l5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div id="fd-dot" style="width:30px;height:30px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">V</div>
+    <div class="topbar-title" id="fd-name">Finca</div>
+    <span id="fd-ha" class="topbar-right"></span>
+  </div>
+  <div class="screen-body">
+    <div style="padding:10px 16px 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="fd-badge" class="badge bg">Estado</span>
+      <span id="fd-var" style="font-size:13px;color:var(--tx2)"></span>
+    </div>
+
+    <div class="stitle">Parcelas catastrales</div>
+    <div class="card"><div class="card-pad" id="fd-parcs"></div></div>
+
+    <div class="stitle">Registrar actividad</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 16px;margin-bottom:4px" id="qa-grid"></div>
+
+    <div class="stitle">Estado fenológico</div>
+    <div class="card"><div class="card-pad">
+      <div class="feno" id="fd-feno"></div>
+      <p id="fd-fase" style="font-size:12px;color:var(--tx2);text-align:center;margin-top:4px"></p>
+    </div></div>
+
+    <div class="stitle">Historial reciente</div>
+    <div class="card" id="fd-historial"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin actividades</p></div></div>
+
+    <div style="padding:8px 16px 0">
+      <button class="btn-danger" onclick="deleteFinca(currentFinca)" style="width:100%">Eliminar finca</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== NUEVA FINCA ========== -->
+<div id="screen-nueva-finca" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15L7 10l5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="topbar-title">Nueva finca</div>
+  </div>
+  <div class="screen-body" style="padding-top:8px">
+    <div class="form-section"><label class="form-label">Nombre de la finca *</label><input type="text" id="nf-nombre" placeholder="Ej: A Veiga do Río, O Chán do Monte..." maxlength="50"></div>
+    <div class="form-section"><label class="form-label">Color identificador</label></div>
+    <div class="color-pick" id="color-pick">
+      <div class="color-swatch sel" style="background:#2D5A1B" data-color="#2D5A1B" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#1A5CA8" data-color="#1A5CA8" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#993C1D" data-color="#993C1D" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#854F0B" data-color="#854F0B" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#6B21A8" data-color="#6B21A8" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#0F7173" data-color="#0F7173" onclick="pickColor(this)"></div>
+      <div class="color-swatch" style="background:#444441" data-color="#444441" onclick="pickColor(this)"></div>
+    </div>
+    <div class="form-section"><label class="form-label">Descripción (opcional)</label><textarea id="nf-desc" rows="2" placeholder="Orientación, tipo de suelo, notas..."></textarea></div>
+    <div style="padding:0 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-radius:var(--rs);margin:0 16px 16px;padding:14px">
+      <div><p style="font-size:15px;font-weight:500;color:var(--tx)">IGP Pataca de Galicia</p><p style="font-size:12px;color:var(--tx2);margin-top:2px">¿Esta finca está inscrita en la IGP?</p></div>
+      <div class="toggle" id="nf-igp-tog" onclick="toggleEl(this)"><div class="toggle-knob"></div></div>
+    </div>
+
+    <div class="stitle" style="padding-top:4px">Parcelas catastrales</div>
+    <div id="nf-parcelas-list"></div>
+    <div style="padding:0 16px;margin-bottom:16px">
+      <button class="btn-secondary" style="width:100%" onclick="addParcelaForm()">+ Añadir parcela (Pol/Par)</button>
+    </div>
+    <div id="nf-parcela-forms"></div>
+
+    <div class="form-section"><label class="form-label">Variedad de patata</label>
+      <select id="nf-variedad"><option value="">— Seleccionar —</option><option>Kennebec</option><option>Agria</option><option>Monalisa</option><option>Spunta</option><option>Désirée</option><option>Granola</option><option>Jaerla</option><option>Baraka</option><option>Otra</option></select>
+    </div>
+
+    <div style="padding:0 16px 24px">
+      <button class="btn-primary" onclick="guardarFinca()">Guardar finca</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== NUEVA ACTIVIDAD ========== -->
+<div id="screen-nueva-actividad" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15L7 10l5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="topbar-title">Nueva actividad</div>
+  </div>
+  <div class="screen-body" style="padding-top:8px">
+    <div class="form-section">
+      <label class="form-label">Finca</label>
+      <select id="na-finca" onchange="updateFincaSelect()"></select>
+    </div>
+    <div class="form-section">
+      <label class="form-label">Fecha y hora</label>
+      <input type="datetime-local" id="na-fecha">
+    </div>
+
+    <div style="padding:0 16px;margin-bottom:8px"><label class="form-label">Tipo de actividad</label></div>
+    <div class="pill-row" id="type-pills">
+      <button class="pill on" onclick="setType('Laboreo',this)">Laboreo</button>
+      <button class="pill" onclick="setType('Siembra',this)">Siembra</button>
+      <button class="pill" onclick="setType('Abonado',this)">Abonado</button>
+      <button class="pill" onclick="setType('Tratamiento',this)">Tratamiento</button>
+      <button class="pill" onclick="setType('Riego',this)">Riego</button>
+      <button class="pill" onclick="setType('Cosecha',this)">Cosecha</button>
+      <button class="pill" onclick="setType('Análisis',this)">Análisis suelo</button>
+    </div>
+
+    <!-- LABOREO -->
+    <div id="f-Laboreo" class="act-fields show">
+      <div class="form-section"><label class="form-label">Tipo de labor</label>
+        <select id="lb-tipo"><option>Alzado</option><option>Subsolado</option><option>Cultivador</option><option selected>Rotovator</option><option>Fresadora</option><option>Pase de tabla</option><option>Aporcado</option><option>Otro</option></select>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Profundidad (cm)</label><input type="number" id="lb-prof" value="25" min="5" max="80"></div>
+        <div><label class="form-label">Condiciones suelo</label><select id="lb-cond"><option>Tempero</option><option>Seco</option><option>Húmedo</option></select></div>
+      </div>
+      <div class="form-section"><label class="form-label">Maquinaria</label><input type="text" id="lb-maq" placeholder="Ej: John Deere 5090R + rotovator"></div>
+      <div class="form-section"><label class="form-label">Dirección de labor</label><select id="lb-dir"><option>Longitudinal</option><option>Transversal</option><option>Curvas de nivel</option></select></div>
+    </div>
+
+    <!-- SIEMBRA -->
+    <div id="f-Siembra" class="act-fields">
+      <div class="form-section"><label class="form-label">Variedad</label>
+        <select id="si-var"><option>Kennebec</option><option>Agria</option><option>Monalisa</option><option>Spunta</option><option>Désirée</option><option>Granola</option><option>Otra</option></select>
+      </div>
+      <div class="form-section"><label class="form-label">Categoría de semilla</label>
+        <select id="si-cat"><option>Certificada</option><option>Básica</option><option>Seleccionada</option></select>
+      </div>
+      <div class="form-section"><label class="form-label">Proveedor</label><input type="text" id="si-prov" placeholder="Nombre del proveedor de semilla"></div>
+      <div class="form-row">
+        <div><label class="form-label">Cantidad (kg/ha)</label><input type="number" id="si-kg" value="2500" min="500" max="5000"></div>
+        <div><label class="form-label">Profundidad (cm)</label><input type="number" id="si-prof" value="12" min="5" max="25"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Dist. líneas (cm)</label><input type="number" id="si-dlin" value="75" min="50" max="100"></div>
+        <div><label class="form-label">Dist. tubérculos (cm)</label><input type="number" id="si-dtub" value="28" min="15" max="40"></div>
+      </div>
+    </div>
+
+    <!-- ABONADO -->
+    <div id="f-Abonado" class="act-fields">
+      <div class="form-section"><label class="form-label">Tipo de abonado</label>
+        <select id="ab-tipo"><option>Fondo</option><option>Cobertera 1ª</option><option>Cobertera 2ª</option><option>Cobertera 3ª</option><option>Fertirrigación</option></select>
+      </div>
+      <div class="form-section"><label class="form-label">Producto / Fertilizante</label><input type="text" id="ab-prod" placeholder="Ej: Nitrofoska 15-15-15, Urea 46%..."></div>
+      <div class="form-section"><label class="form-label">Formulación</label>
+        <select id="ab-form"><option>Sólido granulado</option><option>Líquido</option><option>Orgánico</option><option>Organo-mineral</option></select>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Dosis (kg/ha)</label><input type="number" id="ab-dosis" value="300" oninput="calcUF()" min="0" max="3000"></div>
+        <div><label class="form-label">Riqueza N (%)</label><input type="number" id="ab-n" value="15" oninput="calcUF()" min="0" max="50" step="1"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Riqueza P₂O₅ (%)</label><input type="number" id="ab-p" value="15" oninput="calcUF()" min="0" max="50" step="1"></div>
+        <div><label class="form-label">Riqueza K₂O (%)</label><input type="number" id="ab-k" value="15" oninput="calcUF()" min="0" max="50" step="1"></div>
+      </div>
+      <div class="summary-box">
+        <p style="font-size:12px;color:var(--tx2);margin-bottom:6px;font-weight:500">Unidades fertilizantes estimadas</p>
+        <div style="display:flex;gap:14px">
+          <div style="text-align:center"><span id="uf-n" style="font-size:18px;font-weight:700;color:var(--tx)">45</span><br><span style="font-size:11px;color:var(--tx2)">N kg/ha</span></div>
+          <div style="text-align:center"><span id="uf-p" style="font-size:18px;font-weight:700;color:var(--tx)">45</span><br><span style="font-size:11px;color:var(--tx2)">P₂O₅</span></div>
+          <div style="text-align:center"><span id="uf-k" style="font-size:18px;font-weight:700;color:var(--tx)">45</span><br><span style="font-size:11px;color:var(--tx2)">K₂O</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRATAMIENTO -->
+    <div id="f-Tratamiento" class="act-fields">
+      <div class="form-section"><label class="form-label">Tipo</label>
+        <select id="ft-tipo"><option>Fungicida</option><option>Herbicida</option><option>Insecticida</option><option>Nematicida</option><option>Estimulador</option><option>Otro</option></select>
+      </div>
+      <div class="form-section"><label class="form-label">Producto comercial</label><input type="text" id="ft-prod" placeholder="Ej: Ridomil Gold MZ, Dithane M-45..."></div>
+      <div class="form-section"><label class="form-label">Materia activa</label><input type="text" id="ft-ma" placeholder="Ej: Metalaxil-M + Mancozeb"></div>
+      <div class="form-section"><label class="form-label">Adversidad objetivo</label>
+        <select id="ft-adv"><option>Mildiu (Phytophthora infestans)</option><option>Alternaria (A. solani)</option><option>Escarabajo de la patata</option><option>Pulgones</option><option>Rizoctonia</option><option>Fusarium</option><option>Malas hierbas (pre-em.)</option><option>Malas hierbas (post-em.)</option><option>Otro</option></select>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Dosis (L-kg/ha)</label><input type="number" id="ft-dosis" value="2.5" step="0.1" min="0.1" max="20"></div>
+        <div><label class="form-label">Caldo (L/ha)</label><input type="number" id="ft-caldo" value="400" min="50" max="2000"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Carencia (días)</label><input type="number" id="ft-carencia" value="14" min="0" max="60"></div>
+        <div><label class="form-label">Seg. trabajadores (h)</label><input type="number" id="ft-seguridad" value="24" min="0" max="72"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Temperatura (°C)</label><input type="number" id="ft-temp" placeholder="14" min="-5" max="45"></div>
+        <div><label class="form-label">Viento (km/h)</label><input type="number" id="ft-viento" placeholder="8" min="0" max="60"></div>
+      </div>
+    </div>
+
+    <!-- RIEGO -->
+    <div id="f-Riego" class="act-fields">
+      <div class="form-section"><label class="form-label">Turno</label>
+        <select id="ri-turno"><option>Turno 1</option><option>Turno 2</option><option>Turno 3</option><option>Turno 4</option><option>Turno 5</option></select>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Hora inicio</label><input type="time" id="ri-inicio" value="08:00" oninput="calcRiego()"></div>
+        <div><label class="form-label">Hora cierre</label><input type="time" id="ri-fin" value="16:00" oninput="calcRiego()"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Caudal toma (L/s)</label><input type="number" id="ri-caudal" value="2" step="0.5" oninput="calcRiego()" min="0.1" max="50"></div>
+        <div><label class="form-label">Superficie (ha)</label><input type="number" id="ri-sup" value="2" step="0.1" oninput="calcRiego()" min="0.1" max="50"></div>
+      </div>
+      <div class="form-section"><label class="form-label">Sistema de riego</label>
+        <select id="ri-sis"><option>Aspersión</option><option>Goteo</option><option>Pivot</option><option>Gravedad</option></select>
+      </div>
+      <div class="form-section"><label class="form-label">Estado</label>
+        <select id="ri-est"><option value="programado">Programado</option><option value="en_curso">En curso</option><option value="completado">Completado</option><option value="fallido">Fallido (avería/corte)</option></select>
+      </div>
+      <div class="summary-box" id="ri-summary">
+        <p style="font-size:12px;color:var(--tx2);margin-bottom:6px;font-weight:500">Estimaciones automáticas</p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div><span id="ri-min" style="font-size:17px;font-weight:700;color:var(--tx)">480</span><br><span style="font-size:11px;color:var(--tx2)">min regados</span></div>
+          <div><span id="ri-m3" style="font-size:17px;font-weight:700;color:var(--tx)">57.6</span><br><span style="font-size:11px;color:var(--tx2)">m³ estimados</span></div>
+          <div><span id="ri-mm" style="font-size:17px;font-weight:700;color:var(--tx)">28.8</span><br><span style="font-size:11px;color:var(--tx2)">mm dotación</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COSECHA -->
+    <div id="f-Cosecha" class="act-fields">
+      <div class="form-row">
+        <div><label class="form-label">Fecha inicio</label><input type="date" id="co-inicio"></div>
+        <div><label class="form-label">Fecha fin</label><input type="date" id="co-fin"></div>
+      </div>
+      <div class="form-section"><label class="form-label">Maquinaria</label>
+        <select id="co-maq"><option>Cosechadora 1 hilera</option><option>Cosechadora 2 hileras</option><option>Manual</option></select>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">Kg cosechados totales</label><input type="number" id="co-kg" placeholder="80000" oninput="calcCosecha()" min="0"></div>
+        <div><label class="form-label">Superficie (ha)</label><input type="number" id="co-sup" placeholder="2.0" step="0.1" oninput="calcCosecha()" min="0.1"></div>
+      </div>
+      <div class="summary-box">
+        <p style="font-size:12px;color:var(--tx2);margin-bottom:4px;font-weight:500">Rendimiento calculado</p>
+        <span id="co-rend" style="font-size:20px;font-weight:700;color:var(--tx)">-- t/ha</span>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">% merma estimada</label><input type="number" id="co-merma" value="5" min="0" max="50"></div>
+        <div><label class="form-label">Precio est. (€/kg)</label><input type="number" id="co-precio" placeholder="0.28" step="0.01" min="0"></div>
+      </div>
+      <div class="form-section"><label class="form-label">Destino</label>
+        <select id="co-dest"><option>Cooperativa</option><option>Venta directa</option><option>Almacén propio</option><option>Industria</option></select>
+      </div>
+    </div>
+
+    <!-- ANÁLISIS SUELO -->
+    <div id="f-Análisis" class="act-fields">
+      <div class="form-section"><label class="form-label">Laboratorio</label><input type="text" id="an-lab" placeholder="Ej: Lab. Agroalimentario de Galicia"></div>
+      <div class="form-section"><label class="form-label">Nº muestra / referencia</label><input type="text" id="an-ref" placeholder="Referencia del análisis"></div>
+      <div class="form-row">
+        <div><label class="form-label">pH (agua)</label><input type="number" id="an-ph" value="5.8" step="0.1" min="3" max="9"></div>
+        <div><label class="form-label">MO (%)</label><input type="number" id="an-mo" value="3.2" step="0.1" min="0" max="20"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">P₂O₅ (ppm)</label><input type="number" id="an-p" value="18" min="0" max="500"></div>
+        <div><label class="form-label">K₂O (meq/100g)</label><input type="number" id="an-k" value="0.42" step="0.01" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">N total (%)</label><input type="number" id="an-n" value="0.18" step="0.01" min="0"></div>
+        <div><label class="form-label">CE (dS/m)</label><input type="number" id="an-ce" value="0.12" step="0.01" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div><label class="form-label">% Arena</label><input type="number" id="an-ar" value="45" min="0" max="100"></div>
+        <div><label class="form-label">% Arcilla</label><input type="number" id="an-ac" value="20" min="0" max="100"></div>
+      </div>
+      <div class="summary-box" id="an-interp" style="margin-top:-4px"></div>
+    </div>
+
+    <!-- OBSERVACIONES (siempre visible) -->
+    <div class="form-section" style="margin-top:8px">
+      <label class="form-label">Observaciones</label>
+      <textarea id="na-obs" rows="2" placeholder="Notas adicionales..."></textarea>
+    </div>
+
+    <div style="padding:8px 16px 24px">
+      <button class="btn-primary" id="save-act-btn" onclick="guardarActividad()">Guardar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RIEGO ========== -->
+<div id="screen-riego" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">Riego</div>
+    <span id="riego-fecha" class="topbar-right"></span>
+  </div>
+  <div class="screen-body">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:12px 16px 4px">
+      <div class="metric"><span id="r-mm" class="metric-val">0</span><span class="metric-lbl">mm campaña</span></div>
+      <div class="metric"><span id="r-hoy" class="metric-val">0</span><span class="metric-lbl">turnos hoy</span></div>
+      <div class="metric"><span id="r-total" class="metric-val">0</span><span class="metric-lbl">turnos total</span></div>
+    </div>
+
+    <div class="stitle">Turnos de hoy</div>
+    <div id="riego-hoy"></div>
+
+    <div class="stitle">Próximos turnos</div>
+    <div id="riego-proximos"></div>
+
+    <div class="stitle">Historial</div>
+    <div id="riego-historial"></div>
+
+    <div style="padding:4px 16px 8px">
+      <button class="btn-secondary" style="width:100%" onclick="openNueva('Riego')">+ Registrar turno de riego</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== AJUSTES ========== -->
+<div id="screen-ajustes" class="screen">
+  <div class="topbar">
+    <div class="topbar-title">Ajustes</div>
+  </div>
+  <div class="screen-body">
+    <div class="stitle">Mi explotación</div>
+    <div class="card">
+      <div class="card-pad">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:var(--g);flex-shrink:0" id="aj-ini">JM</div>
+          <div>
+            <input type="text" id="aj-nombre" style="border:none;padding:0;font-size:15px;font-weight:600;background:none;margin-bottom:3px" placeholder="Nombre y apellidos">
+            <input type="text" id="aj-nif" style="border:none;padding:0;font-size:12px;color:var(--tx2);background:none" placeholder="NIF: — · REGA: —">
+          </div>
+        </div>
+        <div class="sep-full" style="margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr)"><span style="font-size:14px;color:var(--tx2)">Municipio</span><span style="font-size:14px;font-weight:500;color:var(--tx)">Xinzo de Limia</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0">
+          <span style="font-size:14px;color:var(--tx2)">IGP Pataca de Galicia</span>
+          <span id="aj-igp-badge" class="badge bg">Inscrito</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stitle">Preferencias</div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--bdr)">
+        <div><p style="font-size:15px;color:var(--tx)">Notificaciones de riego</p><p style="font-size:12px;color:var(--tx2)">Avisos de inicio y cierre de turno</p></div>
+        <div class="toggle on" id="tog-notif-riego" onclick="toggleEl(this)"><div class="toggle-knob"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--bdr)">
+        <div><p style="font-size:15px;color:var(--tx)">Alertas agronómicas</p><p style="font-size:12px;color:var(--tx2)">Mildiu, helada, periodos de carencia</p></div>
+        <div class="toggle on" id="tog-notif-alert" onclick="toggleEl(this)"><div class="toggle-knob"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px">
+        <span style="font-size:15px;color:var(--tx)">Idioma</span>
+        <select style="width:auto;border:none;background:none;font-size:15px;color:var(--tx2);padding:0;text-align:right">
+          <option>Castellano</option><option>Galego</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stitle">Datos y exportación</div>
+    <div class="card">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><p style="font-size:15px;color:var(--tx)">Exportar cuaderno de campo</p><p style="font-size:12px;color:var(--tx2)">JSON con todos los datos de la campaña</p></div>
+          <button class="btn-secondary" onclick="exportarDatos()">Exportar</button>
+        </div>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid var(--bdr)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><p style="font-size:15px;color:var(--tx)">Importar datos</p><p style="font-size:12px;color:var(--tx2)">Restaurar desde archivo JSON</p></div>
+          <button class="btn-secondary" onclick="document.getElementById('import-file').click()">Importar</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)">
+      </div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><p style="font-size:15px;color:var(--rd)">Borrar todos los datos</p><p style="font-size:12px;color:var(--tx2)">Esta acción no se puede deshacer</p></div>
+          <button class="btn-danger" onclick="borrarDatos()">Borrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:20px 0 30px">
+      <p style="font-size:12px;color:var(--tx3)">AgroTracker v1.0 · Xinzo de Limia</p>
+      <p style="font-size:12px;color:var(--tx3);margin-top:2px">Comarca de A Limia · IGP Pataca de Galicia</p>
+      <p style="font-size:11px;color:var(--tx3);margin-top:6px;opacity:.7">Datos guardados en este dispositivo (localStorage)</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
+<!-- BOTTOM NAV -->
+<nav id="nav">
+  <button class="nav-btn active" id="nb-dashboard" onclick="showScreen('dashboard')">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="nav-lbl">Inicio</span>
+  </button>
+  <button class="nav-btn" id="nb-fincas" onclick="showScreen('fincas')">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 22V11l9-8 9 8v11H15v-7H9v7H3Z"/></svg>
+    <span class="nav-lbl">Fincas</span>
+  </button>
+  <button class="nav-center" onclick="openNueva(null)">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button class="nav-btn" id="nb-riego" onclick="showScreen('riego')">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2S5 11 5 16a7 7 0 0 0 14 0C19 11 12 2 12 2Z"/></svg>
+    <span class="nav-lbl">Riego</span>
+  </button>
+  <button class="nav-btn" id="nb-ajustes" onclick="showScreen('ajustes')">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    <span class="nav-lbl">Ajustes</span>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA & CONSTANTS
+// ============================================================
+const FASES = ['Plantación','Emergencia','Des. vegetativo','Tuberización','Maduración','Cosecha'];
+const TIPO_ICONS = {Laboreo:'LB',Siembra:'SI',Abonado:'AB',Tratamiento:'FT',Riego:'RI',Cosecha:'CO','Análisis':'AN'};
+const TIPO_COLORS = {Laboreo:'#EEEBE3',Siembra:'#EBF5E0',Abonado:'#EBF5E0',Tratamiento:'#FEF3C7',Riego:'#E5EFFA',Cosecha:'#FAECE7','Análisis':'#F3E8FF'};
+const TIPO_TC = {Laboreo:'#5A5A52',Siembra:'#2D5A1B',Abonado:'#2D5A1B',Tratamiento:'#B45309',Riego:'#1A5CA8',Cosecha:'#993C1D','Análisis':'#6B21A8'};
+const FASES_VEIGA = 2; // index 0-5
+const WEATHER_CODES = {0:'Despejado',1:'Casi despejado',2:'Parcialmente nublado',3:'Nublado',45:'Niebla',48:'Niebla helada',51:'Llovizna ligera',53:'Llovizna moderada',61:'Lluvia ligera',63:'Lluvia moderada',65:'Lluvia intensa',71:'Nieve ligera',73:'Nieve moderada',80:'Chubascos ligeros',81:'Chubascos moderados',82:'Chubascos intensos',95:'Tormenta',99:'Tormenta con granizo'};
+
+const DEFAULT_FINCAS = [
+  {id:'f1',nombre:'A Veiga do Río',inicial:'V',color:'#2D5A1B',igp:true,descripcion:'Parcelas de regadío junto al río Limia',
+   parcelas:[{id:'p1',poligono:14,parcela:23,superficie:1.2,ref:'32076A014000230000ZS'},{id:'p2',poligono:14,parcela:24,superficie:0.8,ref:'32076A014000240000ZS'}],
+   campana:{variedad:'Kennebec',anyo:2025,estado:'en_curso',fecha_siembra:'2025-03-20',fase:2}},
+  {id:'f2',nombre:'O Chán do Monte',inicial:'C',color:'#1A5CA8',igp:true,descripcion:'Finca en ladera orientada al sur',
+   parcelas:[{id:'p3',poligono:7,parcela:8,superficie:2.0,ref:'32076A007000080000ZS'},{id:'p4',poligono:7,parcela:9,superficie:1.2,ref:'32076A007000090000ZS'}],
+   campana:{variedad:'Agria',anyo:2025,estado:'en_curso',fecha_siembra:'2025-03-22',fase:2}},
+  {id:'f3',nombre:'Finca da Igrexa',inicial:'I',color:'#993C1D',igp:false,descripcion:'',
+   parcelas:[{id:'p5',poligono:3,parcela:15,superficie:1.4,ref:'32076A003000150000ZS'}],
+   campana:{variedad:'Monalisa',anyo:2025,estado:'planificada',fecha_siembra:null,fase:0}}
+];
+
+const DEFAULT_ACTIVIDADES = [
+  {id:'a1',finca_id:'f1',tipo:'Abonado',fecha:'2025-04-13T10:00',descripcion:'Nitrofoska 15-15-15 · 300 kg/ha · Cobertera 1ª',obs:''},
+  {id:'a2',finca_id:'f1',tipo:'Tratamiento',fecha:'2025-04-13T09:00',descripcion:'Ridomil Gold MZ · Mildiu · 2.5 L/ha',obs:'PC 14 días'},
+  {id:'a3',finca_id:'f1',tipo:'Riego',fecha:'2025-04-10T08:00',descripcion:'Turno 1 · 08:00–16:00 · Aspersión · 28.8 mm',obs:''},
+  {id:'a4',finca_id:'f2',tipo:'Tratamiento',fecha:'2025-04-10T10:30',descripcion:'Dithane M-45 · Mildiu preventivo · 2 kg/ha',obs:''},
+  {id:'a5',finca_id:'f3',tipo:'Laboreo',fecha:'2025-04-08T09:00',descripcion:'Rotovator · 25 cm · Tempero',obs:''}
+];
+
+const DEFAULT_RIEGO = [
+  {id:'r1',finca_id:'f1',turno:1,fecha:'2025-04-15',hora_inicio:'08:00',hora_fin:'16:00',sistema:'Aspersión',estado:'en_curso',mm:28.8,m3:57.6},
+  {id:'r2',finca_id:'f2',turno:1,fecha:'2025-04-15',hora_inicio:'16:00',hora_fin:'00:00',sistema:'Aspersión',estado:'programado',mm:28.8,m3:92.2},
+  {id:'r3',finca_id:'f1',turno:2,fecha:'2025-04-17',hora_inicio:'08:00',hora_fin:'16:00',sistema:'Aspersión',estado:'programado',mm:28.8,m3:57.6},
+  {id:'r4',finca_id:'f1',turno:1,fecha:'2025-04-10',hora_inicio:'08:00',hora_fin:'16:00',sistema:'Aspersión',estado:'completado',mm:28.8,m3:57.6},
+  {id:'r5',finca_id:'f2',turno:1,fecha:'2025-04-08',hora_inicio:'08:00',hora_fin:'16:00',sistema:'Aspersión',estado:'completado',mm:28.8,m3:92.2}
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentScreen = 'dashboard';
+let screenHistory = [];
+let currentFinca = null;
+let newFincaColor = '#2D5A1B';
+let parcelaFormCount = 0;
+let nfParcelas = [];
+let currentType = 'Laboreo';
+
+// ============================================================
+// STORAGE
+// ============================================================
+function getData(key, def) {
+  try { const v = localStorage.getItem('agt_'+key); return v ? JSON.parse(v) : def; } catch(e) { return def; }
+}
+function setData(key, val) {
+  try { localStorage.setItem('agt_'+key, JSON.stringify(val)); } catch(e) {}
+}
+
+function initData() {
+  if (!localStorage.getItem('agt_init')) {
+    setData('fincas', DEFAULT_FINCAS);
+    setData('actividades', DEFAULT_ACTIVIDADES);
+    setData('riego', DEFAULT_RIEGO);
+    setData('config', {nombre:'José María Rodríguez',nif:'34567890Z',rega:'ES321234',igp:true,notif_riego:true,notif_alert:true});
+    localStorage.setItem('agt_init','1');
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showScreen(id, addHistory) {
+  if (addHistory !== false) screenHistory.push(currentScreen);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-'+id);
+  if (target) { target.classList.add('active'); target.scrollTop = 0; }
+  currentScreen = id;
+  const mainTabs = ['dashboard','fincas','riego','ajustes'];
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const activeTab = mainTabs.includes(id) ? id : (id.includes('finca') ? 'fincas' : null);
+  if (activeTab) { const b = document.getElementById('nb-'+activeTab); if(b) b.classList.add('active'); }
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'fincas') renderFincas();
+  if (id === 'riego') renderRiego();
+  if (id === 'ajustes') renderAjustes();
+}
+
+function goBack() {
+  const prev = screenHistory.pop() || 'dashboard';
+  showScreen(prev, false);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ============================================================
+// WEATHER
+// ============================================================
+async function loadWeather() {
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=42.059&longitude=-7.721&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=precipitation_sum&timezone=Europe%2FMadrid&forecast_days=1');
+    const d = await r.json();
+    const c = d.current;
+    document.getElementById('w-temp').textContent = Math.round(c.temperature_2m) + '°C';
+    document.getElementById('w-hum').textContent = 'Hum. ' + Math.round(c.relative_humidity_2m) + '%';
+    document.getElementById('w-wind').textContent = 'Viento ' + Math.round(c.wind_speed_10m) + ' km/h';
+    document.getElementById('w-desc').textContent = WEATHER_CODES[c.weather_code] || 'Variable';
+    const rain = d.daily.precipitation_sum[0];
+    document.getElementById('w-rain').textContent = 'Lluvia ' + (rain || 0).toFixed(1) + ' mm';
+  } catch(e) {
+    document.getElementById('w-desc').textContent = 'Sin datos meteorológicos';
+  }
+}
+
+// ============================================================
+// DATE HELPERS
+// ============================================================
+function fmtDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  return d.toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtDateShort(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  return d.toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit'});
+}
+function relativeTime(str) {
+  const diff = (Date.now() - new Date(str).getTime()) / 1000;
+  if (diff < 3600) return 'hace ' + Math.floor(diff/60) + ' min';
+  if (diff < 86400) return 'hace ' + Math.floor(diff/3600) + ' h';
+  if (diff < 604800) return 'hace ' + Math.floor(diff/86400) + ' días';
+  return fmtDateShort(str);
+}
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+function nowDatetimeLocal() {
+  const d = new Date();
+  return d.toISOString().slice(0,16);
+}
+function getDayName() {
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const d = new Date();
+  return days[d.getDay()] + ', ' + d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const fincas = getData('fincas', []);
+  const actividades = getData('actividades', []);
+  const riego = getData('riego', []);
+  const today = todayStr();
+
+  // Date
+  document.getElementById('dash-date').textContent = getDayName();
+  const h = new Date().getHours();
+  const greet = h < 13 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+  const config = getData('config', {});
+  const nombre = (config.nombre || '').split(' ')[0] || '';
+  document.getElementById('dash-greeting').textContent = greet + (nombre ? ', ' + nombre : '');
+
+  // Metrics
+  const totalHa = fincas.reduce((s,f) => s + f.parcelas.reduce((a,p) => a + (p.superficie||0), 0), 0);
+  const enCurso = fincas.filter(f => f.campana && f.campana.estado === 'en_curso').length;
+  document.getElementById('m-fincas').textContent = fincas.length;
+  document.getElementById('m-ha').textContent = totalHa.toFixed(1);
+  document.getElementById('m-camp').textContent = enCurso;
+  document.getElementById('act-count').textContent = actividades.length + ' registros';
+
+  // Alertas
+  const alertas = [];
+  const riegoHoy = riego.filter(r => r.fecha === today && r.estado !== 'completado');
+  riegoHoy.forEach(r => {
+    const f = fincas.find(x => x.id === r.finca_id);
+    const fn = f ? f.nombre : 'Finca';
+    alertas.push({tipo:'blue', titulo:'Turno de riego — ' + fn, desc: r.hora_inicio + ' → ' + r.hora_fin + ' · ' + (r.estado === 'en_curso' ? 'En curso' : 'Programado'), badge:'bb', badgeTxt:'Riego'});
+  });
+  // Carencias
+  actividades.filter(a => a.tipo === 'Tratamiento').forEach(a => {
+    const datos = a.datos || {};
+    if (datos.carencia) {
+      const applied = new Date(a.fecha);
+      const expiry = new Date(applied.getTime() + datos.carencia * 86400000);
+      const daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
+      if (daysLeft >= 0 && daysLeft <= 5) {
+        const f = fincas.find(x => x.id === a.finca_id);
+        alertas.push({tipo:'amber', titulo:'Carencia ' + (datos.producto||'fitosanitario') + ' — vence en ' + daysLeft + ' días', desc:(f?f.nombre:'') + ' · Aplicado ' + fmtDateShort(a.fecha), badge:'ba', badgeTxt:daysLeft+'d'});
+      }
+    }
+  });
+  // Helada (always show in spring)
+  alertas.push({tipo:'orange', titulo:'Riesgo de helada nocturna', desc:'Valle de A Limia · Verificar temperatura mínima', badge:'br', badgeTxt:'Helada'});
+
+  const alertEl = document.getElementById('alertas-container');
+  if (!alertas.length) {
+    alertEl.innerHTML = '<div class="card"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin alertas activas</p></div></div>';
+  } else {
+    alertEl.innerHTML = alertas.map(al => `
+      <div class="alert-card ${al.tipo}">
+        <div style="flex:1"><p style="font-size:14px;font-weight:600;color:var(--tx)">${al.titulo}</p><p style="font-size:12px;color:var(--tx2);margin-top:3px">${al.desc}</p></div>
+        <span class="badge ${al.badge}" style="flex-shrink:0;margin-top:2px">${al.badgeTxt}</span>
+      </div>`).join('');
+  }
+
+  // Recientes
+  const recEl = document.getElementById('recientes-container');
+  const sorted = [...actividades].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0,5);
+  if (!sorted.length) {
+    recEl.innerHTML = '<div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin actividades registradas</p></div>';
+  } else {
+    recEl.innerHTML = '<div style="padding:0 16px">' + sorted.map(a => {
+      const f = fincas.find(x => x.id === a.finca_id);
+      const fn = f ? f.nombre : '?';
+      const fc = f ? f.color : '#888';
+      return `<div class="act-row">
+        <div class="act-icon" style="background:${TIPO_COLORS[a.tipo]||'#eee'};color:${TIPO_TC[a.tipo]||'#555'}">${TIPO_ICONS[a.tipo]||'??'}</div>
+        <div style="flex:1;min-width:0">
+          <p style="font-size:14px;font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.tipo}</p>
+          <p style="font-size:12px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.descripcion}</p>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="width:8px;height:8px;border-radius:50%;background:${fc};margin:0 auto 3px"></div>
+          <p style="font-size:11px;color:var(--tx3)">${relativeTime(a.fecha)}</p>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+}
+
+// ============================================================
+// FINCAS
+// ============================================================
+function renderFincas() {
+  const fincas = getData('fincas', []);
+  const ha = fincas.reduce((s,f) => s + f.parcelas.reduce((a,p) => a + (p.superficie||0), 0), 0);
+  document.getElementById('fincas-ha').textContent = ha.toFixed(1) + ' ha total';
+  const el = document.getElementById('fincas-list');
+  if (!fincas.length) {
+    el.innerHTML = '<div class="card"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin fincas. Añade la primera.</p></div></div>';
+    return;
+  }
+  el.innerHTML = fincas.map(f => {
+    const ha = f.parcelas.reduce((a,p) => a + (p.superficie||0), 0);
+    const st = f.campana.estado;
+    const badgeCls = st === 'en_curso' ? 'bg' : st === 'planificada' ? 'ba' : 'bx';
+    const badgeTxt = st === 'en_curso' ? 'En curso' : st === 'planificada' ? 'Planificada' : 'Finalizada';
+    return `<div class="finca-card" onclick="openFinca('${f.id}')">
+      <div class="finca-dot" style="background:${f.color}">${f.inicial}</div>
+      <div style="flex:1;min-width:0">
+        <p style="font-size:15px;font-weight:600;color:var(--tx)">${f.nombre}</p>
+        <p style="font-size:12px;color:var(--tx2);margin-top:2px">${ha.toFixed(1)} ha · ${f.campana.variedad||'Sin variedad'} · ${f.parcelas.length} parcela${f.parcelas.length!==1?'s':''}</p>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
+        ${f.igp ? '<p style="font-size:10px;color:var(--g);font-weight:600;margin-top:5px">IGP ✓</p>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openFinca(id) {
+  currentFinca = id;
+  const fincas = getData('fincas', []);
+  const f = fincas.find(x => x.id === id);
+  if (!f) return;
+  const ha = f.parcelas.reduce((a,p) => a + (p.superficie||0), 0);
+  document.getElementById('fd-dot').textContent = f.inicial;
+  document.getElementById('fd-dot').style.background = f.color;
+  document.getElementById('fd-name').textContent = f.nombre;
+  document.getElementById('fd-ha').textContent = ha.toFixed(1) + ' ha';
+  const st = f.campana.estado;
+  const bc = st === 'en_curso' ? 'bg' : st === 'planificada' ? 'ba' : 'bx';
+  const bt = st === 'en_curso' ? 'En curso' : st === 'planificada' ? 'Planificada' : 'Finalizada';
+  document.getElementById('fd-badge').className = 'badge ' + bc;
+  document.getElementById('fd-badge').textContent = bt;
+  document.getElementById('fd-var').textContent = f.campana.variedad + ' ' + f.campana.anyo + (f.igp ? ' · IGP Pataca de Galicia' : '');
+
+  // Parcelas
+  const parcEl = document.getElementById('fd-parcs');
+  parcEl.innerHTML = f.parcelas.map(p => `
+    <div class="parc-row">
+      <div><p style="font-size:14px;font-weight:500;color:var(--tx)">Pol. ${p.poligono} / Par. ${p.parcela}</p><p style="font-size:11px;color:var(--tx3)">Ref: ${p.ref||'—'}</p></div>
+      <span style="font-size:15px;font-weight:600;color:var(--tx)">${p.superficie} ha</span>
+    </div>`).join('') +
+    `<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid var(--bdr)">
+      <span style="font-size:13px;color:var(--tx2)">Total</span>
+      <span style="font-size:14px;font-weight:700;color:var(--tx)">${ha.toFixed(1)} ha</span>
+    </div>`;
+
+  // Quick actions
+  const qaEl = document.getElementById('qa-grid');
+  const types = ['Laboreo','Abonado','Tratamiento','Riego','Cosecha','Análisis'];
+  qaEl.innerHTML = types.map(t => `
+    <div style="background:var(--surf);border-radius:var(--rs);box-shadow:var(--sh);padding:11px 6px;text-align:center;cursor:pointer" onclick="openNueva('${t}')" >
+      <div style="width:28px;height:28px;border-radius:50%;background:${TIPO_COLORS[t]||'#eee'};margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${TIPO_TC[t]||'#555'}">${TIPO_ICONS[t]||'?'}</div>
+      <div style="font-size:11px;color:var(--tx2);font-weight:500">${t}</div>
+    </div>`).join('');
+
+  // Fenología
+  const fase = f.campana.fase || 0;
+  const fenoEl = document.getElementById('fd-feno');
+  fenoEl.innerHTML = FASES.map((fn,i) => {
+    const done = i < fase, curr = i === fase;
+    const cls = done ? 'done' : curr ? 'current' : '';
+    const line = i < FASES.length - 1 ? `<div class="feno-line ${i < fase ? 'done' : ''}"></div>` : '';
+    return `<div class="feno-step"><div class="feno-circle ${cls}"></div><div class="feno-lbl ${cls}">${fn.split(' ')[0]}</div></div>${line}`;
+  }).join('');
+  document.getElementById('fd-fase').textContent = FASES[fase] + ' · actualizado ' + fmtDateShort(new Date().toISOString());
+
+  // Historial
+  const acts = getData('actividades',[]).filter(a => a.finca_id === id).sort((a,b) => new Date(b.fecha)-new Date(a.fecha)).slice(0,5);
+  const histEl = document.getElementById('fd-historial');
+  if (!acts.length) {
+    histEl.innerHTML = '<div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin actividades registradas</p></div>';
+  } else {
+    histEl.innerHTML = '<div style="padding:0 16px">' + acts.map(a => `
+      <div class="act-row">
+        <div class="act-icon" style="background:${TIPO_COLORS[a.tipo]||'#eee'};color:${TIPO_TC[a.tipo]||'#555'}">${TIPO_ICONS[a.tipo]||'?'}</div>
+        <div style="flex:1;min-width:0">
+          <p style="font-size:14px;font-weight:500;color:var(--tx)">${a.tipo}</p>
+          <p style="font-size:12px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.descripcion}</p>
+        </div>
+        <span style="font-size:12px;color:var(--tx3);flex-shrink:0">${fmtDateShort(a.fecha)}</span>
+      </div>`).join('') + '</div>';
+  }
+  showScreen('finca-detail');
+}
+
+function deleteFinca(id) {
+  if (!confirm('¿Eliminar esta finca y todos sus datos? Esta acción no se puede deshacer.')) return;
+  let fincas = getData('fincas', []).filter(f => f.id !== id);
+  let acts = getData('actividades', []).filter(a => a.finca_id !== id);
+  let riego = getData('riego', []).filter(r => r.finca_id !== id);
+  setData('fincas', fincas);
+  setData('actividades', acts);
+  setData('riego', riego);
+  toast('Finca eliminada');
+  showScreen('fincas');
+}
+
+// ============================================================
+// NUEVA FINCA
+// ============================================================
+function pickColor(el) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+  newFincaColor = el.dataset.color;
+}
+
+function addParcelaForm() {
+  parcelaFormCount++;
+  const id = 'pf' + parcelaFormCount;
+  const el = document.getElementById('nf-parcela-forms');
+  const div = document.createElement('div');
+  div.id = id;
+  div.style.cssText = 'background:var(--surf);border-radius:var(--r);box-shadow:var(--sh);margin:0 16px 12px;padding:14px 16px';
+  div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <p style="font-size:14px;font-weight:600;color:var(--tx)">Parcela ${parcelaFormCount}</p>
+    <button onclick="document.getElementById('${id}').remove()" style="border:none;background:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:4px">✕ Quitar</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div><label class="form-label">Polígono *</label><input type="number" id="${id}-pol" placeholder="14" min="1" max="999"></div>
+    <div><label class="form-label">Parcela *</label><input type="number" id="${id}-par" placeholder="23" min="1" max="9999"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label class="form-label">Superficie (ha)</label><input type="number" id="${id}-sup" placeholder="1.2" step="0.01" min="0.01"></div>
+    <div><label class="form-label">Ref. catastral</label><input type="text" id="${id}-ref" placeholder="Automática" style="font-size:12px"></div>
+  </div>`;
+  el.appendChild(div);
+}
+
+function guardarFinca() {
+  const nombre = document.getElementById('nf-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio'); return; }
+  const formsEl = document.getElementById('nf-parcela-forms');
+  const forms = formsEl.querySelectorAll('[id^="pf"]');
+  const parcelas = [];
+  for (let f of forms) {
+    const fid = f.id;
+    const pol = parseInt(document.getElementById(fid+'-pol').value);
+    const par = parseInt(document.getElementById(fid+'-par').value);
+    const sup = parseFloat(document.getElementById(fid+'-sup').value);
+    if (!pol || !par) { toast('Introduce polígono y parcela'); return; }
+    if (!sup || sup <= 0) { toast('Introduce la superficie de la parcela'); return; }
+    const ref = document.getElementById(fid+'-ref').value || '32076A' + String(pol).padStart(3,'0') + '000' + String(par).padStart(4,'0') + '0000ZS';
+    parcelas.push({id:'p'+Date.now()+'_'+Math.random().toString(36).slice(2,6),poligono:pol,parcela:par,superficie:sup,ref});
+  }
+  const variedad = document.getElementById('nf-variedad').value;
+  const igp = document.getElementById('nf-igp-tog').classList.contains('on');
+  const desc = document.getElementById('nf-desc').value.trim();
+  const finca = {
+    id: 'f'+Date.now(),
+    nombre, inicial: nombre.trim()[0].toUpperCase(),
+    color: newFincaColor, igp, descripcion: desc,
+    parcelas,
+    campana: {variedad: variedad||'', anyo: new Date().getFullYear(), estado:'planificada', fecha_siembra:null, fase:0}
+  };
+  const fincas = getData('fincas', []);
+  fincas.push(finca);
+  setData('fincas', fincas);
+  // Reset form
+  document.getElementById('nf-nombre').value = '';
+  document.getElementById('nf-desc').value = '';
+  document.getElementById('nf-parcela-forms').innerHTML = '';
+  document.getElementById('nf-variedad').value = '';
+  parcelaFormCount = 0;
+  toast('Finca guardada correctamente');
+  showScreen('fincas');
+}
+
+// ============================================================
+// NUEVA ACTIVIDAD
+// ============================================================
+function openNueva(type) {
+  const fincas = getData('fincas', []);
+  const sel = document.getElementById('na-finca');
+  sel.innerHTML = fincas.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('');
+  if (currentFinca) sel.value = currentFinca;
+  document.getElementById('na-fecha').value = nowDatetimeLocal();
+  if (type) {
+    setType(type, null);
+  }
+  showScreen('nueva-actividad');
+}
+
+function setType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('#type-pills .pill').forEach(p => p.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  else {
+    document.querySelectorAll('#type-pills .pill').forEach(p => {
+      if (p.textContent.trim() === type || (type === 'Análisis' && p.textContent.includes('Análisis'))) p.classList.add('on');
+    });
+  }
+  document.querySelectorAll('.act-fields').forEach(f => f.classList.remove('show'));
+  const el = document.getElementById('f-'+type);
+  if (el) el.classList.add('show');
+  // Riego: prefill sup from selected finca
+  if (type === 'Riego') calcRiego();
+  if (type === 'Análisis') calcAnalysis();
+}
+
+function updateFincaSelect() {
+  if (currentType === 'Riego') calcRiego();
+}
+
+function calcUF() {
+  const d = parseFloat(document.getElementById('ab-dosis').value) || 0;
+  const n = parseFloat(document.getElementById('ab-n').value) || 0;
+  const p = parseFloat(document.getElementById('ab-p').value) || 0;
+  const k = parseFloat(document.getElementById('ab-k').value) || 0;
+  document.getElementById('uf-n').textContent = Math.round(d * n / 100);
+  document.getElementById('uf-p').textContent = Math.round(d * p / 100);
+  document.getElementById('uf-k').textContent = Math.round(d * k / 100);
+}
+
+function calcRiego() {
+  const ini = document.getElementById('ri-inicio').value;
+  const fin = document.getElementById('ri-fin').value;
+  const caudal = parseFloat(document.getElementById('ri-caudal').value) || 0;
+  const sup = parseFloat(document.getElementById('ri-sup').value) || 1;
+  if (!ini || !fin) return;
+  const [h1,m1] = ini.split(':').map(Number);
+  let [h2,m2] = fin.split(':').map(Number);
+  let mins = (h2*60+m2) - (h1*60+m1);
+  if (mins <= 0) mins += 1440;
+  const m3 = (caudal * mins * 60) / 1000;
+  const mm = m3 / sup / 10;
+  document.getElementById('ri-min').textContent = mins;
+  document.getElementById('ri-m3').textContent = m3.toFixed(1);
+  document.getElementById('ri-mm').textContent = mm.toFixed(1);
+}
+
+function calcCosecha() {
+  const kg = parseFloat(document.getElementById('co-kg').value) || 0;
+  const sup = parseFloat(document.getElementById('co-sup').value) || 1;
+  const tha = kg / sup / 1000;
+  document.getElementById('co-rend').textContent = tha.toFixed(1) + ' t/ha';
+}
+
+function calcAnalysis() {
+  const ph = parseFloat(document.getElementById('an-ph').value);
+  const mo = parseFloat(document.getElementById('an-mo').value);
+  const p = parseFloat(document.getElementById('an-p').value);
+  const k = parseFloat(document.getElementById('an-k').value);
+  const interp = [];
+  if (ph) interp.push({lbl:'pH '+(ph<5.5?'bajo':ph<6.5?'medio':'alto'), cls: ph<5.5?'ba':'bg'});
+  if (mo) interp.push({lbl:'MO '+(mo<2?'baja':mo<4?'media':'alta'), cls: mo<2?'ba':'bg'});
+  if (p) interp.push({lbl:'P '+(p<15?'bajo':p<40?'medio':'alto'), cls: p<15?'ba':'bg'});
+  if (k) interp.push({lbl:'K '+(k<0.2?'bajo':k<0.6?'medio':'alto'), cls: k<0.2?'ba':'bg'});
+  const el = document.getElementById('an-interp');
+  if (interp.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--tx2);margin-bottom:7px;font-weight:500">Interpretación automática</p><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      interp.map(i => `<span class="badge ${i.cls}">${i.lbl}</span>`).join('') + '</div>';
+  }
+}
+
+function guardarActividad() {
+  const finca_id = document.getElementById('na-finca').value;
+  const fecha = document.getElementById('na-fecha').value;
+  const obs = document.getElementById('na-obs').value.trim();
+  if (!finca_id) { toast('Selecciona una finca'); return; }
+  if (!fecha) { toast('Indica la fecha y hora'); return; }
+
+  let descripcion = '';
+  let datos = {};
+
+  if (currentType === 'Laboreo') {
+    const tipo = document.getElementById('lb-tipo').value;
+    const prof = document.getElementById('lb-prof').value;
+    const cond = document.getElementById('lb-cond').value;
+    const maq = document.getElementById('lb-maq').value;
+    descripcion = tipo + ' · ' + prof + ' cm · ' + cond;
+    if (maq) descripcion += ' · ' + maq;
+    datos = {tipo,profundidad:prof,condicion:cond,maquinaria:maq};
+  } else if (currentType === 'Siembra') {
+    const variedad = document.getElementById('si-var').value;
+    const cat = document.getElementById('si-cat').value;
+    const kg = document.getElementById('si-kg').value;
+    descripcion = variedad + ' · ' + cat + ' · ' + kg + ' kg/ha';
+    datos = {variedad,categoria:cat,kg_ha:kg};
+  } else if (currentType === 'Abonado') {
+    const prod = document.getElementById('ab-prod').value || '—';
+    const tipo = document.getElementById('ab-tipo').value;
+    const dosis = document.getElementById('ab-dosis').value;
+    descripcion = prod + ' · ' + dosis + ' kg/ha · ' + tipo;
+    datos = {producto:prod,tipo,dosis_kg_ha:dosis,n_pct:document.getElementById('ab-n').value,p_pct:document.getElementById('ab-p').value,k_pct:document.getElementById('ab-k').value};
+  } else if (currentType === 'Tratamiento') {
+    const prod = document.getElementById('ft-prod').value || '—';
+    const adv = document.getElementById('ft-adv').value;
+    const dosis = document.getElementById('ft-dosis').value;
+    const carencia = document.getElementById('ft-carencia').value;
+    descripcion = prod + ' · ' + adv.split('(')[0].trim() + ' · ' + dosis + ' L/ha';
+    datos = {tipo:document.getElementById('ft-tipo').value,producto:prod,materia_activa:document.getElementById('ft-ma').value,adversidad:adv,dosis_l_ha:dosis,caldo_l_ha:document.getElementById('ft-caldo').value,carencia:parseInt(carencia),seguridad:parseInt(document.getElementById('ft-seguridad').value)};
+  } else if (currentType === 'Riego') {
+    const turno = document.getElementById('ri-turno').value;
+    const ini = document.getElementById('ri-inicio').value;
+    const fin = document.getElementById('ri-fin').value;
+    const sis = document.getElementById('ri-sis').value;
+    const mm = document.getElementById('ri-mm').textContent;
+    const estado = document.getElementById('ri-est').value;
+    descripcion = turno + ' · ' + ini + '–' + fin + ' · ' + sis + ' · ' + mm + ' mm';
+    datos = {turno,hora_inicio:ini,hora_fin:fin,sistema:sis,mm:parseFloat(mm),m3:parseFloat(document.getElementById('ri-m3').textContent),estado};
+    // Also save to riego
+    const riego = getData('riego', []);
+    riego.push({id:'r'+Date.now(),finca_id,turno:parseInt(turno.replace('Turno ','')),fecha:fecha.slice(0,10),hora_inicio:ini,hora_fin:fin,sistema:sis,estado,mm:parseFloat(mm),m3:parseFloat(document.getElementById('ri-m3').textContent)});
+    setData('riego', riego);
+  } else if (currentType === 'Cosecha') {
+    const kg = document.getElementById('co-kg').value;
+    const sup = document.getElementById('co-sup').value;
+    const rend = document.getElementById('co-rend').textContent;
+    descripcion = kg + ' kg · ' + rend + ' · ' + document.getElementById('co-dest').value;
+    datos = {kg_totales:kg,superficie:sup,rendimiento_tha:rend,destino:document.getElementById('co-dest').value,precio:document.getElementById('co-precio').value};
+  } else if (currentType === 'Análisis') {
+    const lab = document.getElementById('an-lab').value;
+    descripcion = 'pH ' + document.getElementById('an-ph').value + ' · MO ' + document.getElementById('an-mo').value + '% · Lab: ' + (lab||'—');
+    datos = {laboratorio:lab,ref:document.getElementById('an-ref').value,pH:document.getElementById('an-ph').value,mo:document.getElementById('an-mo').value,p_ppm:document.getElementById('an-p').value,k_meq:document.getElementById('an-k').value};
+  }
+
+  const act = {id:'a'+Date.now(),finca_id,tipo:currentType,fecha,descripcion,obs,datos};
+  const acts = getData('actividades',[]);
+  acts.push(act);
+  setData('actividades', acts);
+
+  // Reset obs
+  document.getElementById('na-obs').value = '';
+  toast('Registro guardado correctamente');
+  goBack();
+}
+
+// ============================================================
+// RIEGO
+// ============================================================
+function renderRiego() {
+  const today = todayStr();
+  const fincas = getData('fincas',[]);
+  const riego = getData('riego',[]);
+  const todayTurnos = riego.filter(r => r.fecha === today);
+  const futuros = riego.filter(r => r.fecha > today && r.estado !== 'completado');
+  const pasados = riego.filter(r => r.fecha < today || r.estado === 'completado').sort((a,b) => b.fecha.localeCompare(a.fecha)).slice(0,5);
+  const mmTotal = riego.filter(r => r.estado === 'completado').reduce((s,r) => s + (r.mm||0), 0);
+  document.getElementById('r-mm').textContent = mmTotal.toFixed(0);
+  document.getElementById('r-hoy').textContent = todayTurnos.length;
+  document.getElementById('r-total').textContent = riego.length;
+  const fechaStr = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('riego-fecha').textContent = fechaStr;
+
+  function renderTurno(r, showComplete) {
+    const f = fincas.find(x => x.id === r.finca_id);
+    const fn = f ? f.nombre : '?';
+    const fc = f ? f.color : '#888';
+    const stCls = r.estado === 'en_curso' ? 'bb' : r.estado === 'completado' ? 'bg' : r.estado === 'fallido' ? 'brd' : 'bx';
+    const stTxt = r.estado === 'en_curso' ? 'En curso' : r.estado === 'completado' ? 'Completado' : r.estado === 'fallido' ? 'Fallido' : 'Programado';
+    // Progress
+    let progPct = 0;
+    if (r.estado === 'completado') progPct = 100;
+    else if (r.estado === 'en_curso') {
+      const now = new Date();
+      const [h1,m1] = r.hora_inicio.split(':').map(Number);
+      const startMs = new Date(r.fecha+'T'+r.hora_inicio+':00').getTime();
+      let [h2,m2] = r.hora_fin.split(':').map(Number);
+      let endMs = new Date(r.fecha+'T'+r.hora_fin+':00').getTime();
+      if (endMs <= startMs) endMs += 86400000;
+      progPct = Math.min(100, Math.max(0, (now - startMs) / (endMs - startMs) * 100));
+    }
+    return `<div class="turno-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${fc}"></div>
+            <p style="font-size:14px;font-weight:600;color:var(--tx)">${fn}</p>
+          </div>
+          <p style="font-size:12px;color:var(--tx2)">${r.sistema||'Aspersión'} · Turno ${r.turno} · ${r.fecha !== today ? fmtDateShort(r.fecha) : ''}</p>
+        </div>
+        <span class="badge ${stCls}">${stTxt}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-size:22px;font-weight:700;color:var(--tx)">${r.hora_inicio}</span>
+        <span style="font-size:13px;color:var(--tx2)">→ ${r.hora_fin} · ${(r.mm||0).toFixed(1)} mm</span>
+      </div>
+      <div class="turno-prog"><div class="turno-fill" style="width:${progPct.toFixed(0)}%;background:${r.estado==='completado'?'var(--g)':'var(--b)'}"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--tx2)">${r.m3 ? r.m3.toFixed(1)+' m³ estimados' : ''}</span>
+        ${showComplete && r.estado !== 'completado' ? `<button onclick="completarTurno('${r.id}')" style="font-size:12px;padding:6px 12px;border:1.5px solid var(--bdr2);border-radius:var(--rs);background:none;cursor:pointer;color:var(--tx2);font-family:inherit">Marcar completado</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const hoyEl = document.getElementById('riego-hoy');
+  hoyEl.innerHTML = todayTurnos.length ? todayTurnos.map(r => renderTurno(r, true)).join('') :
+    '<div class="card"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin turnos programados para hoy</p></div></div>';
+
+  const proxEl = document.getElementById('riego-proximos');
+  proxEl.innerHTML = futuros.length ? futuros.slice(0,3).map(r => renderTurno(r, false)).join('') :
+    '<div class="card"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin turnos futuros programados</p></div></div>';
+
+  const histEl = document.getElementById('riego-historial');
+  histEl.innerHTML = pasados.length ? pasados.map(r => renderTurno(r, false)).join('') :
+    '<div class="card"><div class="card-pad"><p style="color:var(--tx3);font-size:14px">Sin historial de riego</p></div></div>';
+}
+
+function completarTurno(id) {
+  const riego = getData('riego',[]);
+  const r = riego.find(x => x.id === id);
+  if (r) r.estado = 'completado';
+  setData('riego', riego);
+  toast('Turno marcado como completado');
+  renderRiego();
+}
+
+// ============================================================
+// AJUSTES
+// ============================================================
+function renderAjustes() {
+  const cfg = getData('config', {});
+  document.getElementById('aj-nombre').value = cfg.nombre || '';
+  document.getElementById('aj-nif').value = [cfg.nif ? 'NIF: '+cfg.nif : '', cfg.rega ? 'REGA: '+cfg.rega : ''].filter(Boolean).join(' · ');
+  const ini = (cfg.nombre||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'JM';
+  document.getElementById('aj-ini').textContent = ini;
+  if (cfg.igp) document.getElementById('aj-igp-badge').className = 'badge bg';
+  setToggle('tog-notif-riego', cfg.notif_riego !== false);
+  setToggle('tog-notif-alert', cfg.notif_alert !== false);
+}
+
+function setToggle(id, on) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (on) el.classList.add('on'); else el.classList.remove('on');
+}
+
+function exportarDatos() {
+  const data = {
+    fincas: getData('fincas',[]),
+    actividades: getData('actividades',[]),
+    riego: getData('riego',[]),
+    config: getData('config',{}),
+    exportado: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'agrotracker-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Datos exportados correctamente');
+}
+
+function importarDatos(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.fincas) setData('fincas', data.fincas);
+      if (data.actividades) setData('actividades', data.actividades);
+      if (data.riego) setData('riego', data.riego);
+      if (data.config) setData('config', data.config);
+      toast('Datos importados correctamente');
+      renderDashboard();
+    } catch(err) { toast('Error al leer el archivo'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function borrarDatos() {
+  if (!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem('agt_init');
+  ['fincas','actividades','riego','config'].forEach(k => localStorage.removeItem('agt_'+k));
+  initData();
+  toast('Datos borrados. Datos de ejemplo cargados.');
+  renderDashboard();
+}
+
+// ============================================================
+// TOGGLE HELPER
+// ============================================================
+function toggleEl(el) {
+  el.classList.toggle('on');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  initData();
+  loadWeather();
+  renderDashboard();
+
+  // Autoguardar config en ajustes
+  document.getElementById('aj-nombre').addEventListener('input', function() {
+    const cfg = getData('config',{});
+    cfg.nombre = this.value;
+    setData('config', cfg);
+  });
+});
+</script>
+</body>
+</html>
